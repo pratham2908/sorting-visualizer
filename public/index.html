@@ -8,9 +8,37 @@
       name="description"
       content="Web site created using create-react-app"
     />
+    <script
+      src="https://kit.fontawesome.com/09bf6604f2.js"
+      crossorigin="anonymous"
+    ></script>
+
     <title>Sorting Visualizer</title>
   </head>
-  <body>
+  <body class="dark">
+    <button class="toggle-theme"><i class="fas fa-sun"></i></button>
     <div id="root"></div>
+    <audio src="./flagpole.wav" id="sort-complete"></audio>
+    <audio src="./flagpole.wav"></audio>
+
+    <script>
+      const toggleTheme = document.querySelector(".toggle-theme");
+
+      toggleTheme.addEventListener("click", () => {
+        const lightChart = document.querySelector(".chart.light");
+        const darkChart = document.querySelector(".chart.dark");
+        document.body.classList.toggle("light");
+        document.body.classList.toggle("dark");
+        if (document.body.classList.contains("light")) {
+          toggleTheme.innerHTML = '<i class="fas fa-moon"></i>';
+          lightChart.classList.remove("hidden");
+          darkChart.classList.add("hidden");
+        } else {
+          toggleTheme.innerHTML = '<i class="fas fa-sun"></i>';
+          darkChart.classList.remove("hidden");
+          lightChart.classList.add("hidden");
+        }
+      });
+    </script>
   </body>
 </html>

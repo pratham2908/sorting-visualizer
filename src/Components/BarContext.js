@@ -1,21 +1,31 @@
-import { createContext, useEffect, useState } from "react";
-
+import { createContext, useEffect, useState, useRef } from "react";
 export const BarContext = createContext();
 
 
 const BarContextProvider = (props) => {
-    const [bar, setBar] = useState([]);
-    const [curr, setCurr] = useState("");
+    const [bar1, setBar1] = useState([]);
+    const [bar2, setBar2] = useState([]);
     const [arrSize, setArrSize] = useState(100);
+    const [speed, setSpeed] = useState(50);
+    const [result1, setResult1] = useState(false);
+    const [result2, setResult2] = useState(false);
+    const time1 = useRef(2);
+    const sort1 = useRef("Merge Sort");
+    const sort2 = useRef("Bubble Sort");
+    const time2 = useRef(1);
+    const [comparison1, setComp1] = useState(0);
+    const [comparison2, setComp2] = useState(0);
+    const firstSound = useRef(false);
+
+    const sound = document.getElementById('sort-complete');
+    const sound2 = document.querySelector('audio:nth-of-type(2)');
 
 
     function shuffleBars() {
-        setCurr("");
         let newBar = [];
         for (let i = 0; i < arrSize; i++) {
             newBar.push(i + 1);
         }
-        setBar(newBar);
         for (let i = newBar.length - 1; i > 0; i--) {
             let j = Math.floor(Math.random() * (i + 1));
             let temp = newBar[i];
@@ -23,76 +33,96 @@ const BarContextProvider = (props) => {
             newBar[j] = temp;
 
         }
-        setBar([...newBar]);
-        enableButtons()
+        setBar1([...newBar]);
+        setBar2([...newBar]);
 
     }
 
-    function delayIt(speed) {
-        return new Promise(resolve => setTimeout(resolve, speed));
+    function changeSpeed(newSpeed) {
+        setSpeed(newSpeed);
+    }
+
+    function delayIt() {
+        return new Promise(resolve => setTimeout(resolve, 101 - speed));
     }
 
     function changeArrSize(size) {
         setArrSize(size);
     }
 
-    function colorBars(first, second) {
-        const firstBar = document.querySelector(`.bar:nth-child(${first + 1})`);
-        const secondBar = document.querySelector(`.bar:nth-child(${second + 1})`);
+    function colorBars(first, second, value) {
+        let whichBar = value == 1 ? ".bar-container:nth-child(1) " : ".bar-container:nth-child(3) "
+        let firstColor = value == 1 ? "firstA" : "secondA";
+        let secondColor = value == 1 ? "firstB" : "secondB";
+        const firstBar = document.querySelector(`${whichBar} .bar:nth-child(${first + 1})`);
+        const secondBar = document.querySelector(`${whichBar} .bar:nth-child(${second + 1})`);
 
-        firstBar.classList.add("red");
-        secondBar.classList.add("yellow");
+        firstBar.classList.add(`${firstColor}`);
+        secondBar.classList.add(`${secondColor}`);
     }
 
-    function deColorBars(first, second) {
-        const firstBar = document.querySelector(`.bar:nth-child(${first + 1})`);
-        const secondBar = document.querySelector(`.bar:nth-child(${second + 1})`);
+    function deColorBars(first, second, value) {
+        let whichBar = value == 1 ? ".bar-container:nth-child(1) " : ".bar-container:nth-child(3) "
+        let firstColor = value == 1 ? "firstA" : "secondA";
+        let secondColor = value == 1 ? "firstB" : "secondB";
+        const firstBar = document.querySelector(`${whichBar} .bar:nth-child(${first + 1})`);
+        const secondBar = document.querySelector(`${whichBar} .bar:nth-child(${second + 1})`);
 
-        firstBar.classList.remove("red");
-        secondBar.classList.remove("yellow");
+        firstBar.classList.remove(`${firstColor}`);
+        secondBar.classList.remove(`${secondColor}`);
+    }
+
+    async function sortComplete(value, startTime) {
+
+        const newDuration = (101 - speed) * arrSize / (sound.duration * 100);
+        const newPlayBackRate = sound.duration / newDuration;
+
+        let whichSound = sound;
+        if (firstSound.current) {
+            whichSound = sound2;
+        } else {
+            firstSound.current = true;
+        }
+        whichSound.playbackRate = newPlayBackRate < 0.065 ? 0.065 : newPlayBackRate;
+        whichSound.play();
+        const endTime = performance.now();
+
+        let whichBar = value == 1 ? ".bar-container:nth-child(1) " : ".bar-container:nth-child(3) "
+        for (let i = 0; i < bar1.length; i++) {
+            document.querySelector(`${whichBar}  .bar:nth-child(${i + 1})`).classList.remove("green");
+
+            for (let j = i + 1; j < i + (15 * arrSize / 100); j++) {
+                if (j < bar1.length) {
+                    const bar = document.querySelector(`${whichBar}  .bar:nth-child(${j + 1})`);
+                    bar.classList.add("green");
+                }
+
+            }
+            await delayIt();
+        }
+        if (value == 1) {
+            setResult1(true);
+            time1.current = ((endTime - startTime) / 1000).toFixed(2) * 1;         // *1 is used to convert the result to number from string(implicit type conversion)
+        } else {
+            time2.current = ((endTime - startTime) / 1000).toFixed(2) * 1;         // *1 is used to convert the result to number from string(implicit type conversion)
+            setResult2(true);
+
+        }
+
+        whichSound.load();
     }
 
     function disableButtons() {
-        const buttons = document.querySelectorAll(".buttons-container> *");
+        const buttons = document.querySelectorAll(".buttons-container button, .buttons-container input, .start-button");
         buttons.forEach((button) => {
             button.disabled = true;
         })
     }
 
-    function enableButtons() {
-        const buttons = document.querySelectorAll(".buttons-container> *");
-        buttons.forEach((button) => {
-            button.disabled = false;
-        })
-    }
-
-    async function sortComplete() {
-        let audio = document.getElementById("sort-complete");
-        audio.playbackRate = 0.4;
-        audio.play();
-        await delayIt(200);
-
-
-        for (let i = 0; i < bar.length; i++) {
-            document.querySelector(`.bar:nth-child(${i + 1})`).classList.remove("green");
-            for (let j = i + 1; j < i + (15 * arrSize / 100); j++) {
-                if (j < bar.length) {
-                    const bar = document.querySelector(`.bar:nth-child(${j + 1})`);
-                    bar.classList.add("green");
-                }
-
-            }
-            await delayIt(1000 / arrSize);
-        }
-        setCurr("Finished");
-        document.querySelector(".buttons-container> button:last-child").disabled = false;
-
-    }
-
-    async function selectionSort(speed) {
-        setCurr("Selection");
-        disableButtons()
-
+    async function selectionSort(value) {
+        disableButtons();
+        let startTime = performance.now();
+        let { bar, setBar, setComp } = identifyBars(value);
         let newBar = [...bar];
         let minIndex = 0;
         for (let i = 0; i < newBar.length; i++) {
@@ -100,25 +130,29 @@ const BarContextProvider = (props) => {
             for (let j = i + 1; j < newBar.length; j++) {
                 if (newBar[j] < newBar[minIndex]) {
                     minIndex = j;
-
                 }
-                colorBars(j, minIndex);
-                await delayIt(101 - speed);
-                deColorBars(j, minIndex);
+
+                eval(setComp + `((prev) => prev + 1)`);
+                colorBars(j, minIndex, value);
+                await delayIt();
+                deColorBars(j, minIndex, value);
             }
             let temp = newBar[i];
             newBar[i] = newBar[minIndex];
             newBar[minIndex] = temp;
-            setBar([...newBar]);
+            eval(setBar + "([...newBar])");
         }
 
-        sortComplete();
+
+        sortComplete(value, startTime);
+
     }
 
-    async function bubbleSort(speed) {
-        setCurr("Bubble");
+    async function bubbleSort(value) {
         disableButtons()
 
+        let startTime = performance.now();
+        let { bar, setBar, setComp } = identifyBars(value);
         let newBar = [...bar];
         for (const element of newBar) {
             for (let j = 0; j < newBar.length; j++) {
@@ -126,71 +160,79 @@ const BarContextProvider = (props) => {
                     let temp = newBar[j];
                     newBar[j] = newBar[j + 1];
                     newBar[j + 1] = temp;
-                    setBar([...newBar]);
-                    colorBars(j, j + 1);
-                    await delayIt(101 - speed);
-
-                    deColorBars(j, j + 1);
+                    eval(setBar + "([...newBar])")
+                    colorBars(j, j + 1, value);
+                    await delayIt();
+                    deColorBars(j, j + 1, value);
                 }
+
+                eval(setComp + `((prev) => prev + 1)`);
+
             }
+
         }
 
-        sortComplete();
+        sortComplete(value, startTime);
 
     }
 
-    async function insertionSort(speed) {
-        setCurr("Insertion");
+    async function insertionSort(value) {
         disableButtons()
 
+        let startTime = performance.now();
+
+        let { bar, setBar, setComp } = identifyBars(value);
         let newBar = [...bar];
         for (let i = 1; i < newBar.length; i++) {
             let key = newBar[i];
             let j = i - 1;
             while (j >= 0 && newBar[j] > key) {
                 newBar[j + 1] = newBar[j];
-                colorBars(i, j);
-                await delayIt(101 - speed);
-                deColorBars(i, j);
+                colorBars(i, j, value);
+                await delayIt();
+                deColorBars(i, j, value);
                 j--;
-
-
+                eval(setComp + `((prev) => prev + 1)`);
             }
             newBar[j + 1] = key;
-            setBar([...newBar]);
+            eval(setBar + "([...newBar])");
         }
 
-        sortComplete();
+        sortComplete(value, startTime);
     }
 
-    async function mergeSort(speed) {
-        setCurr("Merge");
+    async function mergeSort(value) {
         disableButtons()
-        let sorted = await merge(bar, 0, speed);
-        setBar([...sorted]);
-        sortComplete();
+        let startTime = performance.now();
+        let { bar, setBar, setComp } = identifyBars(value);
+        let sorted = await merge(bar, 0, setBar, value, bar, setComp);
+        eval(setBar + "([...sorted])");
+        sortComplete(value, startTime);
 
     }
 
-    async function merge(arr, start, speed) {
+    async function merge(arr, start, setBar, value, bar, setComp) {
+
         if (arr.length <= 1) {
             return arr;
         }
         let leftStart = start;
-        let rightStart = Math.floor(arr.length / 2) + start - 1;
-        let mid = Math.floor(arr.length / 2);
-        let left = await merge(arr.slice(0, mid), leftStart, speed);
-        let right = await merge(arr.slice(mid), rightStart, speed);
-        let ans = await mergeHelper(left, right, leftStart, rightStart, speed);
+        let rightStart = Math.floor(arr.length / 2) + start;
+        let mid = arr.length % 2 == 0 ? arr.length / 2 : arr.length / 2 + 1;
+        let left = await merge(arr.slice(0, mid), leftStart, setBar, value, bar, setComp);
+        let right = await merge(arr.slice(mid), rightStart, setBar, value, bar, setComp);
+        let ans = await mergeHelper(left, right, leftStart, rightStart, value, setComp);
         let newBar = bar;
+
         for (let i = 0; i < ans.length; i++) {
             newBar[i + start] = ans[i];
         }
-        setBar([...newBar]);
+
+        eval(setBar + "([...newBar])");
         return ans;
     }
 
-    async function mergeHelper(left, right, leftStart, rightStart, speed) {
+    async function mergeHelper(left, right, leftStart, rightStart, value, setComp) {
         let result = [];
         let leftIdx = 0;
         let rightIdx = 0;
@@ -198,17 +240,20 @@ const BarContextProvider = (props) => {
             if (left[leftIdx] < right[rightIdx]) {
                 result.push(left[leftIdx]);
                 leftIdx++;
-                colorBars(leftStart + leftIdx, rightStart + rightIdx);
-                await delayIt(101 - speed);
-                deColorBars(leftStart + leftIdx, rightStart + rightIdx);
+                colorBars(leftStart + leftIdx, rightStart + rightIdx - 1, value);
+                await delayIt();
+                deColorBars(leftStart + leftIdx, rightStart + rightIdx - 1, value);
             } else {
                 result.push(right[rightIdx]);
                 rightIdx++;
-                colorBars(leftStart + leftIdx, rightStart + rightIdx);
+                colorBars(leftStart + leftIdx, rightStart + rightIdx - 1, value);
+                await delayIt();
+                deColorBars(leftStart + leftIdx, rightStart + rightIdx - 1, value);
 
-                await delayIt(101 - speed);
-                deColorBars(leftStart + leftIdx, rightStart + rightIdx);
             }
+
+            eval(setComp + `((prev) => prev + 1)`);
+
         }
 
 
@@ -216,43 +261,45 @@ const BarContextProvider = (props) => {
 
     }
 
-    async function quickSort(speed) {
-        setCurr("Quick");
+    async function quickSort(value) {
+        let startTime = performance.now();
         disableButtons()
-        let sorted = await quick(bar, 0, bar.length - 1, speed);
-        console.log(sorted);
-        setBar([...sorted]);
-        sortComplete();
+        let { bar, setBar, setComp } = identifyBars(value);
+        await quick(bar, 0, bar.length - 1, setBar, value, setComp);
+        sortComplete(value, startTime);
 
     }
 
-    async function quick(arr, start, end, speed) {
+    async function quick(arr, start, end, setBar, value, setComp) {
         if (start >= end) {
             return arr;
         }
         let pivot = arr[end];
-        let pivotIdx = start;
-        for (let i = start; i < end; i++) {
-            if (arr[i] < pivot) {
+        let pivotIdx = start - 1;
+        for (let i = start; i <= end; i++) {
+            if (arr[i] <= pivot) {
                 let temp = arr[i];
-                arr[i] = arr[pivotIdx];
+                arr[i] = arr[++pivotIdx];
                 arr[pivotIdx] = temp;
-                colorBars(i, pivotIdx);
-                await delayIt(101 - speed);
-                deColorBars(i, pivotIdx);
-                pivotIdx++;
+                colorBars(i, pivotIdx, value);
+                await delayIt();
+                deColorBars(i, pivotIdx, value);
             }
-        }
-        let temp = arr[end];
-        arr[end] = arr[pivotIdx];
-        arr[pivotIdx] = temp;
-        colorBars(end, pivotIdx);
 
-        await delayIt(101 - speed);
-        deColorBars(end, pivotIdx);
-        let left = await quick(arr, start, pivotIdx - 1, speed);
-        let right = await quick(arr, pivotIdx + 1, end, speed);
-        return left.concat(right);
+            eval(setComp + `((prev) => prev + 1)`);
+            eval(setBar + "([...arr])");
+        }
+
+        await delayIt();
+        await quick(arr, start, pivotIdx - 1, setBar, value, setComp);
+        await quick(arr, pivotIdx + 1, end, setBar, value, setComp);
+    }
+
+    function identifyBars(value) {
+        let bar = value == 1 ? bar1 : bar2;
+        let setBar = value == 1 ? "setBar1" : "setBar2";
+        let setComp = value == 1 ? "setComp1" : "setComp2";
+        return { bar, setBar, setComp };
     }
 
 
@@ -261,7 +308,7 @@ const BarContextProvider = (props) => {
     }, [arrSize]);
 
     return (
-        <BarContext.Provider value={{ curr, bar, shuffleBars, selectionSort, bubbleSort, mergeSort, quickSort, insertionSort, changeArrSize, arrSize }}>
+        <BarContext.Provider value={{ time1, time2, sort1, sort2, result1, result2, bar1, bar2, changeSpeed, selectionSort, insertionSort, bubbleSort, mergeSort, quickSort, shuffleBars, speed, changeArrSize, arrSize, comparison1, comparison2 }}>
             {props.children}
         </BarContext.Provider>
     )
